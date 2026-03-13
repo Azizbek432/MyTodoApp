@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from "react";
 import {
   FlatList,
   Keyboard,
@@ -14,6 +15,36 @@ export default function Page() {
   const [taskList, setTaskList] = useState<
     { id: string; text: string; completed: boolean }[]
   >([]);
+
+  // 1. Ilova birinchi marta ochilganda ma'lumotlarni yuklash
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  // 2. taskList o'zgarganda uni xotiraga saqlash
+  useEffect(() => {
+    saveTasks(taskList);
+  }, [taskList]);
+
+  const saveTasks = async (tasks: any) => {
+    try {
+      const jsonValue = JSON.stringify(tasks);
+      await AsyncStorage.setItem("@tasks", jsonValue);
+    } catch (e) {
+      console.log("Saqlashda xato:", e);
+    }
+  };
+
+  const loadTasks = async () => {
+    try {
+      const jsonValue = await AsyncStorage.getItem("@tasks");
+      if (jsonValue !== null) {
+        setTaskList(JSON.parse(jsonValue));
+      }
+    } catch (e) {
+      console.log("Yuklashda xato:", e);
+    }
+  };
 
   const handleAddTask = () => {
     if (task.trim().length > 0) {
@@ -94,15 +125,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 12,
   },
-  completedCard: {
-    backgroundColor: "#e8f5e9",
-    opacity: 0.7,
-  },
+  completedCard: { backgroundColor: "#e8f5e9", opacity: 0.7 },
   taskText: { fontSize: 16, color: "#444", width: "80%" },
-  completedText: {
-    textDecorationLine: "line-through",
-    color: "#aaa",
-  },
+  completedText: { textDecorationLine: "line-through", color: "#aaa" },
   deleteBtn: { color: "#ff4d4d", fontWeight: "bold", fontSize: 18, padding: 5 },
   inputContainer: {
     flexDirection: "row",
