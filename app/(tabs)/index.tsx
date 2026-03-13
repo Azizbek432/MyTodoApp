@@ -1,8 +1,10 @@
+import { Ionicons } from "@expo/vector-icons"; // Ikonkalar kutubxonasi
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useState } from "react";
 import {
   FlatList,
   Keyboard,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -16,41 +18,35 @@ export default function Page() {
     { id: string; text: string; completed: boolean }[]
   >([]);
 
-  // 1. Ilova birinchi marta ochilganda ma'lumotlarni yuklash
   useEffect(() => {
     loadTasks();
   }, []);
-
-  // 2. taskList o'zgarganda uni xotiraga saqlash
   useEffect(() => {
     saveTasks(taskList);
   }, [taskList]);
 
   const saveTasks = async (tasks: any) => {
     try {
-      const jsonValue = JSON.stringify(tasks);
-      await AsyncStorage.setItem("@tasks", jsonValue);
+      await AsyncStorage.setItem("@tasks", JSON.stringify(tasks));
     } catch (e) {
-      console.log("Saqlashda xato:", e);
+      console.log(e);
     }
   };
 
   const loadTasks = async () => {
     try {
       const jsonValue = await AsyncStorage.getItem("@tasks");
-      if (jsonValue !== null) {
-        setTaskList(JSON.parse(jsonValue));
-      }
+      if (jsonValue !== null) setTaskList(JSON.parse(jsonValue));
     } catch (e) {
-      console.log("Yuklashda xato:", e);
+      console.log(e);
     }
   };
 
   const handleAddTask = () => {
     if (task.trim().length > 0) {
       setTaskList([
-        ...taskList,
         { id: Date.now().toString(), text: task, completed: false },
+        ...taskList,
       ]);
       setTask("");
       Keyboard.dismiss();
@@ -71,88 +67,125 @@ export default function Page() {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+
+      {/* Yuqori qism (Header) */}
       <View style={styles.header}>
-        <Text style={styles.title}>Mening Rejalarim</Text>
+        <Text style={styles.title}>Mening Kunim</Text>
+        <Text style={styles.subtitle}>{taskList.length} ta vazifa bor</Text>
       </View>
 
+      {/* Ro'yxat */}
       <FlatList
         data={taskList}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TouchableOpacity
+          <View
             style={[styles.taskCard, item.completed && styles.completedCard]}
-            onPress={() => toggleTask(item.id)}
           >
-            <Text
-              style={[styles.taskText, item.completed && styles.completedText]}
+            <TouchableOpacity
+              style={styles.taskContent}
+              onPress={() => toggleTask(item.id)}
             >
-              {item.text}
-            </Text>
-            <TouchableOpacity onPress={() => deleteTask(item.id)}>
-              <Text style={styles.deleteBtn}>X</Text>
+              <Ionicons
+                name={item.completed ? "checkmark-circle" : "ellipse-outline"}
+                size={24}
+                color={item.completed ? "#4CAF50" : "#6C63FF"}
+              />
+              <Text
+                style={[
+                  styles.taskText,
+                  item.completed && styles.completedText,
+                ]}
+              >
+                {item.text}
+              </Text>
             </TouchableOpacity>
-          </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => deleteTask(item.id)}
+              style={styles.deleteIcon}
+            >
+              <Ionicons name="trash-outline" size={20} color="#FF5252" />
+            </TouchableOpacity>
+          </View>
         )}
         style={styles.list}
+        showsVerticalScrollIndicator={false}
       />
 
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder={"Yangi vazifa..."}
-          value={task}
-          onChangeText={(text) => setTask(text)}
-        />
-        <TouchableOpacity onPress={handleAddTask} style={styles.addBtn}>
-          <Text style={styles.addBtnText}>+</Text>
-        </TouchableOpacity>
+      {/* Input */}
+      <View style={styles.inputWrapper}>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder={"Nima qilish kerak?"}
+            placeholderTextColor="#999"
+            value={task}
+            onChangeText={(text) => setTask(text)}
+          />
+          <TouchableOpacity onPress={handleAddTask} style={styles.addBtn}>
+            <Ionicons name="add" size={30} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f0f2f5" },
-  header: { paddingTop: 60, paddingHorizontal: 20, marginBottom: 20 },
-  title: { fontSize: 28, fontWeight: "bold", color: "#1a1a1a" },
-  list: { paddingHorizontal: 20 },
+  container: { flex: 1, backgroundColor: "#F8F9FE" },
+  header: { paddingTop: 70, paddingHorizontal: 30, marginBottom: 20 },
+  title: { fontSize: 32, fontWeight: "800", color: "#2D3436" },
+  subtitle: { fontSize: 16, color: "#A0A0A0", marginTop: 5 },
+  list: { paddingHorizontal: 25 },
   taskCard: {
     backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: 20,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  completedCard: { backgroundColor: "#e8f5e9", opacity: 0.7 },
-  taskText: { fontSize: 16, color: "#444", width: "80%" },
-  completedText: { textDecorationLine: "line-through", color: "#aaa" },
-  deleteBtn: { color: "#ff4d4d", fontWeight: "bold", fontSize: 18, padding: 5 },
+  completedCard: { backgroundColor: "#F1F2F6", elevation: 0 },
+  taskContent: { flexDirection: "row", alignItems: "center", flex: 1 },
+  taskText: {
+    fontSize: 17,
+    color: "#2D3436",
+    marginLeft: 12,
+    fontWeight: "500",
+  },
+  completedText: { textDecorationLine: "line-through", color: "#B2BEC3" },
+  deleteIcon: { padding: 5 },
+  inputWrapper: { paddingBottom: 30, paddingTop: 10 },
   inputContainer: {
     flexDirection: "row",
-    padding: 20,
+    marginHorizontal: 25,
     backgroundColor: "#fff",
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-  },
-  input: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-    padding: 12,
     borderRadius: 25,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: "#ddd",
+    paddingLeft: 20,
+    alignItems: "center",
+    height: 60,
+    shadowColor: "#6C63FF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 5,
   },
+  input: { flex: 1, fontSize: 16, color: "#2D3436" },
   addBtn: {
-    backgroundColor: "#007bff",
+    backgroundColor: "#6C63FF",
     width: 50,
     height: 50,
-    borderRadius: 25,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 5,
   },
-  addBtnText: { color: "#fff", fontSize: 24, fontWeight: "bold" },
 });
